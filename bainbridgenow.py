@@ -1,5 +1,7 @@
 from scraper_ics import scrape_ics
+from scraper_json import scrape_json
 from event import Event
+import time
 
 scraped_events = []
 
@@ -18,6 +20,11 @@ for event in events:
     event.event_type = "LIBRARY"
     event.zip_code = "44023"
 scraped_events.append(events)
+
+# CVCC
+timestamp_ms = int(time.time() * 1000)
+url = f"https://www.cvcc.org/events_upcoming?t={timestamp_ms}&rendermode=json&version=3&limit=20"
+scraped_events = scrape_json(url)
 
 for event in scraped_events:
     print(event)
