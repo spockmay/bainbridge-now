@@ -1,6 +1,10 @@
 from icalendar import Calendar, Event
 from typing import List
 import requests
+from datetime import datetime
+from openai import OpenAI
+import json
+from lxml import html
 
 from event import Event
 
@@ -83,8 +87,132 @@ def scrape_ics(source: str) -> List[Event]:
     return events
 
 
-if __name__ == "__main__":
-    scraped_events = scrape_ics("http://bainbridgetwp.com/events/list/?ical=1")
+def fetch_event_block(url: str, xpath: str) -> str:
+    """
+    Fetches the webpage at the given URL and extracts the text content
+    of the block defined by the XPath XPATH.
+    Returns the block's text as a string.
+    """
+    # Fetch the page
+    response = requests.get(url)
+    response.raise_for_status()  # raises an error if request failed
 
-    for event in scraped_events:
+    # Parse HTML
+    tree = html.fromstring(response.content)
+
+    # Extract with XPath
+    nodes = tree.xpath(xpath)
+
+    if not nodes:
+        raise ValueError("No content found at the given XPath.")
+
+    # Convert node(s) to text (preserve formatting where possible)
+    block_text = nodes[0].text_content().strip()
+
+    return block_text
+
+
+def extract_events_llm(url: str, xpath: str):
+    """
+    Takes a URL of an events page, asks ChatGPT to extract events,
+    and returns them as structured JSON.
+    """
+    print("Getting contents of %s for ChatGPT to parse" % (url,))
+    block_text = fetch_event_block(url, xpath)
+
+    prompt = f"""
+    The following is text from a community events webpage:
+
+    {block_text}
+
+    Extract all upcoming events into a JSON array.
+    Each object must have the following fields:
+      - start_datetime (ISO 8601 format)
+      - end_datetime (ISO 8601 format)
+      - title
+      - url
+      - zip_code (infer from city or set to null if unknown).
+    The default timezone for all events is America/New_York.
+    """
+
+    client = OpenAI()
+
+    response = client.chat.completions.create(
+        model="gpt-5",
+        messages=[
+            {
+                "role": "system",
+                "content": "You are a helpful assistant that extracts structured event data from webpages.",
+            },
+            {"role": "user", "content": prompt},
+        ],
+        temperature=1,
+        response_format={"type": "json_object"},  # force JSON output
+    )
+
+    # Parse JSON directly (since response_format guarantees valid JSON)
+    events = json.loads(response.choices[0].message.content)
+
+    return events
+
+
+def convert_llm_json_to_events(
+    json_data: List[dict], page_url: str
+) -> List[Event]:
+    """
+    Converts a list of event dictionaries from a specific JSON format to a list of Event objects.
+
+    Args:
+        json_data: A list of dictionaries, where each dictionary represents an event.
+
+    Returns:
+        A list of Event objects.
+    """
+    events = []
+    for item in json_data.get("events", []):
+        try:
+            name = item.get("title", "No Title")
+            url = item.get("url")
+            if url is None:
+                url = page_url
+            zip_code = (
+                str(item.get("zip_code")) if item.get("zip_code") else "N/A"
+            )
+            event_type = "COMMUNITY"
+
+            start_dt_str = item.get("start_datetime")
+            end_dt_str = item.get("end_datetime")
+
+            start_dt = (
+                datetime.fromisoformat(start_dt_str)
+                if start_dt_str
+                else datetime.min
+            )
+            end_dt = datetime.fromisoformat(end_dt_str) if end_dt_str else None
+
+            event = Event(
+                start_datetime=start_dt,
+                end_datetime=end_dt,
+                name=name,
+                url=url,
+                event_type=event_type,
+                zip_code=zip_code,
+            )
+            events.append(event)
+        except Exception as e:
+            print(
+                f"An error occurred while converting JSON to Event object: {e}"
+            )
+
+    return events
+
+
+if __name__ == "__main__":
+    url = "https://www.geaugamapleleaf.com/community/geauga-happenings-592/"
+    events_json = extract_events_llm(
+        url, "/html/body/div[2]/div[2]/div[2]/div[3]"
+    )
+    events = convert_llm_json_to_events(events_json, url)
+
+    for event in events:
         print(event)
