@@ -147,15 +147,26 @@ def get_unique_event_types() -> List[str]:
 # scrape_events()
 
 event_types = get_unique_event_types()
-for event_type in event_types:
+out_html = "<html>"
 
+for event_type in event_types:
     upcoming = get_events_by_date_and_type(
-        datetime.now(),
-        datetime.now() + timedelta(days=7),
+        datetime.now() + timedelta(days=1),
+        datetime.now() + timedelta(days=8),
         event_type=event_type,
     )
 
     if upcoming:
-        print("<h1>%s Events:</h1>" % (event_type.capitalize(),))
+        out_html += "<h1>%s Events:</h1>" % (event_type.capitalize(),)
         for event in upcoming:
-            print(event.html())
+            out_html += event.html()
+
+out_html += "</html>"
+try:
+    with open("output.html", "w") as html_file:
+        # Write the contents of the out_html string to the file.
+        html_file.write(out_html)
+    print(f"Successfully wrote the HTML content to file")
+except IOError as e:
+    # Handle potential file writing errors.
+    print(f"An error occurred while writing to the file: {e}")
