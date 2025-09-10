@@ -4,6 +4,7 @@ import json
 import re
 import requests
 from lxml import html
+from bs4 import BeautifulSoup
 
 from event import Event
 
@@ -58,7 +59,7 @@ def scrape_json(url: str) -> List[Event]:
                     event_type=event_type,
                     zip_code=zip_code,
                 )
-                print(event)
+
                 events.append(event)
             except Exception as e:
                 print(
@@ -130,7 +131,8 @@ def parse_datetime(date_str):
     return dt.isoformat()
 
 
-def parse_bainbridge_events(url: str):
+def parse_bainbridge_events(url: str) -> List[Event]:
+    # This method parses the events from the Bainbridge Historical Society webpage
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
@@ -182,23 +184,108 @@ def parse_bainbridge_events(url: str):
                     title = f"{title}: {subtitle}"  # append subtitle to title
                 i += 1
 
-            events.append(
-                {
-                    "title": title,
-                    "start_datetime": start_datetime,
-                    "url": url,
-                    "event_type": "COMMUNITY",
-                    "zip_code": "44023",
-                }
+            event = Event(
+                start_datetime=start_datetime,
+                name=title,
+                url=url,
+                event_type="COMMUNITY",
+                zip_code="44023",
             )
+            events.append(event)
         else:
             i += 1
 
     return events
 
 
+def scrape_park_events(pg: int = 1) -> List[Event]:
+    base_url = "https://reservations.geaugaparkdistrict.org"
+
+    if pg == 1:
+        url = f"{base_url}/programs/"
+    else:
+        index = 25 * (pg - 1)
+        url = f"{base_url}/programs/index.shtml?month=&day=&year=&list_programs=1&or=&dts=&wy=asc&num={index}&sid=885364.17254&uid="
+
+    response = requests.get(url)
+    response.raise_for_status()  # raises error if request failed
+    soup = BeautifulSoup(response.text, "html.parser")
+
+    events = []
+
+    # Locate the main event table
+    table = soup.find("table", attrs={"width": "688", "bgcolor": "white"})
+    if not table:
+        return events
+
+    rows = table.find_all("tr")
+    for row in rows:
+        cols = row.find_all("td")
+        if len(cols) <= 8:
+            continue
+
+        # Name + URL
+        link = cols[2].find("a")
+        name = link.get_text(strip=True) if link else None
+        url = base_url + link["href"] if link and link.get("href") else None
+
+        # Location
+        location = cols[3].get_text(strip=True)
+
+        # Date
+        date_str = cols[4].get_text(strip=True)
+
+        # Time (number + AM/PM in separate columns)
+        time_str = (
+            cols[5].get_text(strip=True) + " " + cols[6].get_text(strip=True)
+        )
+        time_str = time_str.strip()
+
+        start_datetime = None
+        if date_str and time_str.strip():
+            for fmt in ("%m/%d/%y %I:%M %p", "%m/%d/%y %I %p"):
+                try:
+                    start_datetime = datetime.strptime(
+                        f"{date_str} {time_str}", fmt
+                    )
+                    break
+                except ValueError:
+                    continue
+        if start_datetime is None:
+            continue
+
+        # Fee
+        fee = cols[7].get_text(strip=True)
+
+        # Availability
+        availability = cols[8].get_text(strip=True)
+
+        if availability == "Waiting list":
+            continue
+        if availability == "OPEN" or availability == "":
+            notes = "%s" % (fee)
+        else:
+            notes = "%s - %s seats remaining" % (fee, availability)
+
+        event = Event(
+            start_datetime=start_datetime,
+            name=name,
+            url=url,
+            event_type="PARK",
+            zip_code=location,
+            notes=notes,
+        )
+        events.append(event)
+
+    return events
+
+
 if __name__ == "__main__":
-    url = "https://bainbridgehistoricalsociety.org/events/"
-    events = parse_bainbridge_events(url)
+    events = scrape_park_events()
+    events.extend(scrape_park_events(pg=2))
+    events.extend(scrape_park_events(pg=3))
+
     for e in events:
         print(e)
+
+    print(len(events))
