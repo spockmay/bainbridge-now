@@ -3,7 +3,6 @@ from typing import List
 import json
 import re
 import requests
-import time
 from lxml import html
 
 from event import Event
