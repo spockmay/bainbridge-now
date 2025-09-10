@@ -31,6 +31,7 @@ class Event:
         end_datetime: Optional[datetime] = None,
         url: Optional[str] = None,
         promoted: bool = False,
+        notes: str = "",
     ):
         self.start_datetime = start_datetime
         self.end_datetime = end_datetime
@@ -39,6 +40,7 @@ class Event:
         self.event_type = event_type
         self.zip_code = zip_code
         self.promoted = promoted
+        self.notes = notes
 
     def __repr__(self):
         """
@@ -52,7 +54,7 @@ class Event:
         return (
             f"Event(Name: '{self.name}', Start: {self.start_datetime.strftime('%Y-%m-%d %H:%M')}"
             f"{end_time_str}, Type: '{self.event_type}', Zip: '{self.zip_code}', "
-            f"URL: '{self.url}', Promoted: '{self.promoted}')"
+            f"URL: '{self.url}', Promoted: '{self.promoted}', Notes: '{self.notes}')"
         )
 
     def write_to_db(self, db_path: str = "event_db.sql"):
@@ -77,7 +79,8 @@ class Event:
                     url TEXT,
                     event_type TEXT,
                     zip_code TEXT,
-                    promoted INTEGER
+                    promoted INTEGER,
+                    notes TEXT
                 )
             """
             )
@@ -85,8 +88,8 @@ class Event:
             # Insert the event data
             cursor.execute(
                 """
-                INSERT INTO events (name, start_datetime, end_datetime, url, event_type, zip_code, promoted)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO events (name, start_datetime, end_datetime, url, event_type, zip_code, promoted, notes)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
                 (
                     self.name,
@@ -100,6 +103,7 @@ class Event:
                     self.event_type,
                     self.zip_code,
                     self.promoted,
+                    self.notes,
                 ),
             )
 
@@ -143,7 +147,7 @@ def get_events_by_date_and_type(
         # The dates in the database are stored as ISO format strings, so we convert the
         # input dates to strings for comparison.
         base_query = """
-            SELECT name, start_datetime, end_datetime, url, event_type, zip_code, promoted
+            SELECT name, start_datetime, end_datetime, url, event_type, zip_code, promoted, notes
             FROM events
             WHERE start_datetime >= ? AND start_datetime <= ?
         """
@@ -170,6 +174,7 @@ def get_events_by_date_and_type(
                 event_type,
                 zip_code,
                 promoted,
+                notes,
             ) = row
             start_dt = datetime.fromisoformat(start_dt_str)
             end_dt = datetime.fromisoformat(end_dt_str) if end_dt_str else None
@@ -182,6 +187,7 @@ def get_events_by_date_and_type(
                 event_type=event_type,
                 zip_code=zip_code,
                 promoted=bool(promoted),
+                notes=notes,
             )
             events.append(event)
 
