@@ -114,18 +114,92 @@ def get_geauga_maple_leaf_current_events_url(url: str) -> List[str]:
     return urls
 
 
-if __name__ == "__main__":
-    # Scrape URLs from the Geauga Maple Leaf website
-    url_geauga = (
-        "https://www.geaugamapleleaf.com/category/community/geauga-happenings/"
-    )
-    scraped_urls = get_geauga_maple_leaf_current_events_url(url_geauga)
+def parse_datetime(date_str):
+    """
+    Converts a date string like "Wednesday, September 10, 2025 @ 7pm"
+    into ISO 8601 format.
+    """
+    # Remove weekday dynamically
+    if "," in date_str:
+        date_str = date_str.split(",", 1)[
+            1
+        ].strip()  # " September 10, 2025 @ 7pm"
 
-    if scraped_urls:
-        print(
-            f"Successfully scraped {len(scraped_urls)} URLs from the Geauga Maple Leaf website."
-        )
-        for url in scraped_urls:
-            print(url)
-    else:
-        print("No URLs were scraped from the Geauga Maple Leaf website.")
+    date_str = date_str.replace("@", "").strip()  # "September 10, 2025 7pm"
+
+    dt = datetime.strptime(date_str, "%B %d, %Y %I%p")
+    return dt.isoformat()
+
+
+def parse_bainbridge_events(url: str):
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    }
+    response = requests.get(url, headers=headers)
+    response.raise_for_status()
+    tree = html.fromstring(response.content)
+    container = tree.xpath("/html/body/div/div[2]/div/main/article/div/div")
+    if not container:
+        raise ValueError("Event container not found.")
+    container = container[0]
+
+    events = []
+    children = container.getchildren()
+    i = 0
+    while i < len(children):
+        el = children[i]
+
+        if el.text_content().strip().startswith("PAST EVENT"):
+            break
+
+        if el.tag == "h4" and "center" not in el.get("style", ""):
+            title = el.text_content().strip()
+            if title == "":
+                i += 1
+                continue
+            i += 1
+
+            # First <p> after title: start datetime
+            start_datetime = None
+            if i < len(children) and children[i].tag == "p":
+                try:
+                    start_datetime = parse_datetime(
+                        children[i].text_content().strip()
+                    )
+                except Exception:
+                    start_datetime = None
+                i += 1
+
+            # Second <p> after title: contains subtitle (bold) + description
+            if i < len(children) and children[i].tag == "p":
+                second_p = children[i]
+                # Find <strong> inside second <p> for subtitle
+                subtitle_el = second_p.xpath(".//b")
+                if subtitle_el:
+                    subtitle = (
+                        subtitle_el[0].text_content().strip().split(".")[0]
+                    )
+                    title = f"{title}: {subtitle}"  # append subtitle to title
+                i += 1
+
+            events.append(
+                {
+                    "title": title,
+                    "start_datetime": start_datetime,
+                    "url": url,
+                    "event_type": "COMMUNITY",
+                    "zip_code": "44023",
+                }
+            )
+        else:
+            i += 1
+
+    return events
+
+
+if __name__ == "__main__":
+    url = "https://bainbridgehistoricalsociety.org/events/"
+    events = parse_bainbridge_events(url)
+    for e in events:
+        print(e)

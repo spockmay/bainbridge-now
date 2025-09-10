@@ -94,7 +94,13 @@ def fetch_event_block(url: str, xpath: str) -> str:
     Returns the block's text as a string.
     """
     # Fetch the page
-    response = requests.get(url)
+
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    }
+
+    response = requests.get(url, headers=headers)
     response.raise_for_status()  # raises an error if request failed
 
     # Parse HTML
