@@ -6,6 +6,7 @@ from datetime import datetime
 from typing import Optional
 import sqlite3
 from typing import List
+import pytz
 
 
 class Event:
@@ -56,6 +57,68 @@ class Event:
             f"{end_time_str}, Type: '{self.event_type}', Zip: '{self.zip_code}', "
             f"URL: '{self.url}', Promoted: '{self.promoted}', Notes: '{self.notes}')"
         )
+
+    def html(self) -> str:
+        """
+        Returns an HTML formatted version of the event
+        """
+        # Define the target timezone
+        nyc_tz = pytz.timezone("America/New_York")
+
+        # 1. Convert the start_datetime to the America/New York timezone
+        # If the original datetime is naive, localize it.
+        if (
+            self.start_datetime.tzinfo is None
+            or self.start_datetime.tzinfo.utcoffset(self.start_datetime)
+            is None
+        ):
+            # This assumes the original naive datetime is in the system's local timezone.
+            local_tz = pytz.timezone(
+                "America/New_York"
+            )  # Or get the system timezone
+            start_datetime_aware = local_tz.localize(self.start_datetime)
+        else:
+            start_datetime_aware = self.start_datetime.astimezone(nyc_tz)
+
+        # Format the datetimes for display
+        start_time_str = start_datetime_aware.strftime("%B %d, %Y, %#I:%M %p")
+
+        if self.end_datetime:
+            if (
+                self.end_datetime.tzinfo is None
+                or self.end_datetime.tzinfo.utcoffset(self.end_datetime)
+                is None
+            ):
+                local_tz = pytz.timezone("America/New_York")
+                end_datetime_aware = local_tz.localize(self.end_datetime)
+            else:
+                end_datetime_aware = self.end_datetime.astimezone(nyc_tz)
+
+            # 4. Format the end time string
+            end_time_str = " - %s" % (end_datetime_aware.strftime("%I:%M %p"))
+        else:
+            end_time_str = ""
+
+        # Construct the time range string
+        time_range = start_time_str
+        if self.end_datetime:
+            time_range = f"{start_time_str.split(',')[0]}, {start_time_str.split(',')[1].strip()} @ {start_time_str.split(',')[2].strip()} {end_time_str}"
+
+        notes_html = (
+            f"<br><strong>Notes:</strong> {self.notes}</br>"
+            if self.notes
+            else ""
+        )
+
+        return f"""
+            <div>
+                <h2>{self.name}</h2>
+                <p>{time_range}
+                <br>{self.zip_code}
+                {notes_html}
+                <br><a href="{self.url}" target="_blank">details</a></p>
+            </div>
+        """
 
     def write_to_db(self, db_path: str = "event_db.sql"):
         """
