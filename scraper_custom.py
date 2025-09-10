@@ -57,6 +57,7 @@ def scrape_json(url: str) -> List[Event]:
                     url=url,
                     event_type=event_type,
                     zip_code=zip_code,
+                    location=location,
                 )
 
                 events.append(event)
@@ -188,6 +189,7 @@ def parse_bainbridge_events(url: str) -> List[Event]:
                 url=url,
                 event_type="COMMUNITY",
                 zip_code="44023",
+                location="Bainbridge Library Community Room",
             )
             events.append(event)
         else:
@@ -272,6 +274,7 @@ def scrape_park_events(pg: int = 1) -> List[Event]:
             event_type="PARK",
             zip_code=location,
             notes=notes,
+            location=location,
         )
         events.append(event)
 

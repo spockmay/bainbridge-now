@@ -21,6 +21,7 @@ class Event:
         end_datetime (Optional[datetime]): The optional ending date and time of the event.
         url (Optional[str]): An optional URL for more information about the event.
         promoted (bool): Is this event to be displayed as promoted? Defaults to false.
+        location (str): A string describing the location of the event.
     """
 
     def __init__(
@@ -33,6 +34,7 @@ class Event:
         url: Optional[str] = None,
         promoted: bool = False,
         notes: str = "",
+        location: str = "",
     ):
         self.start_datetime = start_datetime
         self.end_datetime = end_datetime
@@ -42,6 +44,7 @@ class Event:
         self.zip_code = zip_code
         self.promoted = promoted
         self.notes = notes
+        self.location = location
 
     def __repr__(self):
         """
@@ -55,7 +58,7 @@ class Event:
         return (
             f"Event(Name: '{self.name}', Start: {self.start_datetime.strftime('%Y-%m-%d %H:%M')}"
             f"{end_time_str}, Type: '{self.event_type}', Zip: '{self.zip_code}', "
-            f"URL: '{self.url}', Promoted: '{self.promoted}', Notes: '{self.notes}')"
+            f"URL: '{self.url}', Promoted: '{self.promoted}', Notes: '{self.notes}', Location: '{self.location}')"
         )
 
     def html(self) -> str:
@@ -110,11 +113,13 @@ class Event:
             else ""
         )
 
+        location_html = f"<br>{self.location}" if self.location else ""
+
         return f"""
             <div>
                 <h2>{self.name}</h2>
                 <p>{time_range}
-                <br>{self.zip_code}
+                {location_html}
                 {notes_html}
                 <br><a href="{self.url}" target="_blank">details</a></p>
             </div>
@@ -143,7 +148,8 @@ class Event:
                     event_type TEXT,
                     zip_code TEXT,
                     promoted INTEGER,
-                    notes TEXT
+                    notes TEXT,
+                    location TEXT
                 )
             """
             )
@@ -151,8 +157,8 @@ class Event:
             # Insert the event data
             cursor.execute(
                 """
-                INSERT INTO events (name, start_datetime, end_datetime, url, event_type, zip_code, promoted, notes)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO events (name, start_datetime, end_datetime, url, event_type, zip_code, promoted, notes, location)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
                 (
                     self.name,
@@ -167,6 +173,7 @@ class Event:
                     self.zip_code,
                     self.promoted,
                     self.notes,
+                    self.location,
                 ),
             )
 
@@ -209,7 +216,7 @@ def get_events_by_date_and_type(
         # The dates in the database are stored as ISO format strings, so we convert the
         # input dates to strings for comparison.
         base_query = """
-            SELECT name, start_datetime, end_datetime, url, event_type, zip_code, promoted, notes
+            SELECT name, start_datetime, end_datetime, url, event_type, zip_code, promoted, notes, location
             FROM events
             WHERE start_datetime >= ? AND start_datetime <= ?
         """
@@ -237,6 +244,7 @@ def get_events_by_date_and_type(
                 zip_code,
                 promoted,
                 notes,
+                location,
             ) = row
             start_dt = datetime.fromisoformat(start_dt_str)
             end_dt = datetime.fromisoformat(end_dt_str) if end_dt_str else None
@@ -250,6 +258,7 @@ def get_events_by_date_and_type(
                 zip_code=zip_code,
                 promoted=bool(promoted),
                 notes=notes,
+                location=location,
             )
             events.append(event)
 

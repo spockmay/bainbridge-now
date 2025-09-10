@@ -74,6 +74,7 @@ def scrape_ics(source: str) -> List[Event]:
                     url=url,
                     event_type=event_type,
                     zip_code=zip_code,
+                    location=location,
                 )
                 events.append(event)
     except FileNotFoundError:
@@ -135,7 +136,8 @@ def extract_events_llm(url: str, xpath: str):
       - end_datetime (ISO 8601 format)
       - title
       - url
-      - zip_code (infer from city or set to null if unknown).
+      - zip_code (infer from city or set to null if unknown)
+      - location (either the address of the name of the location of the event)
     The default timezone for all events is America/New_York.
     """
 
@@ -183,6 +185,7 @@ def convert_llm_json_to_events(
                 str(item.get("zip_code")) if item.get("zip_code") else "N/A"
             )
             event_type = "COMMUNITY"
+            location = item.get("location")
 
             start_dt_str = item.get("start_datetime")
             end_dt_str = item.get("end_datetime")
@@ -201,6 +204,7 @@ def convert_llm_json_to_events(
                 url=url,
                 event_type=event_type,
                 zip_code=zip_code,
+                location=location,
             )
             events.append(event)
         except Exception as e:
