@@ -171,7 +171,6 @@ class Event:
             )
 
             conn.commit()
-            print(f"Successfully wrote event '{self.name}' to the database.")
 
         except sqlite3.Error as e:
             print(f"SQLite error: {e}")

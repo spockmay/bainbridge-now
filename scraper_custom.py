@@ -23,7 +23,6 @@ def scrape_json(url: str) -> List[Event]:
     try:
         if requests is None:
             return []
-        print(f"Downloading and parsing JSON from {url}...")
         response = requests.get(url)
         response.raise_for_status()
         json_data = response.json()
@@ -49,7 +48,7 @@ def scrape_json(url: str) -> List[Event]:
                     zip_code = "N/A"
 
                 # The event type is not available, so we'll use a placeholder
-                event_type = "GENERAL"
+                event_type = "COMMUNITY"
 
                 event = Event(
                     start_datetime=start_dt,
@@ -91,7 +90,6 @@ def get_geauga_maple_leaf_current_events_url(url: str) -> List[str]:
         return urls
 
     try:
-        print(f"Downloading and parsing HTML from {url}...")
         response = requests.get(url)
         response.raise_for_status()
 

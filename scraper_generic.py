@@ -27,7 +27,6 @@ def scrape_ics(source: str) -> List[Event]:
         if source.startswith("http"):
             if requests is None:
                 return []
-            print(f"Downloading from {source}...")
             response = requests.get(source)
             response.raise_for_status()  # Raise an exception for bad status codes
             ics_content = response.content
@@ -123,7 +122,6 @@ def extract_events_llm(url: str, xpath: str):
     Takes a URL of an events page, asks ChatGPT to extract events,
     and returns them as structured JSON.
     """
-    print("Getting contents of %s for ChatGPT to parse" % (url,))
     block_text = fetch_event_block(url, xpath)
 
     prompt = f"""
