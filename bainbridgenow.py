@@ -43,7 +43,19 @@ def any_word_in(phrase: str, words: List[str]) -> bool:
 #         event.event_type = "SCHOOL"
 #         event.zip_code = "44023"
 #         filt_events.append(event)
+# scraped_events.extend(filt_events)
 
+# Kenston Sports
+# events = scrape_ics(
+#     "https://mmboltapi.azurewebsites.net/api/v2/events/downloadcalendar/2482879/0"
+# )
+# filt_events = []
+# for event in events:
+#     if "vs" in event.name.lower():
+#         event.event_type = "SCHOOL"
+#         event.zip_code = "44023"
+#         event.url = "https://www.kenstonathletics.com/"
+#         filt_events.append(event)
 # scraped_events.extend(filt_events)
 
 # # CVCC - https://www.cvcc.org/events/calendar
