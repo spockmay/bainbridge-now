@@ -17,6 +17,7 @@ class Event:
         zip_code (str): The ZIP code where the event is located.
         end_datetime (Optional[datetime]): The optional ending date and time of the event.
         url (Optional[str]): An optional URL for more information about the event.
+        promoted (bool): Is this event to be displayed as promoted? Defaults to false.
     """
 
     def __init__(
@@ -27,6 +28,7 @@ class Event:
         zip_code: str,
         end_datetime: Optional[datetime] = None,
         url: Optional[str] = None,
+        promoted: bool = False,
     ):
         self.start_datetime = start_datetime
         self.end_datetime = end_datetime
@@ -34,6 +36,7 @@ class Event:
         self.url = url
         self.event_type = event_type
         self.zip_code = zip_code
+        self.promoted = promoted
 
     def __repr__(self):
         """
@@ -47,5 +50,5 @@ class Event:
         return (
             f"Event(Name: '{self.name}', Start: {self.start_datetime.strftime('%Y-%m-%d %H:%M')}"
             f"{end_time_str}, Type: '{self.event_type}', Zip: '{self.zip_code}', "
-            f"URL: '{self.url}')"
+            f"URL: '{self.url}', Promoted: '{self.promoted}')"
         )
