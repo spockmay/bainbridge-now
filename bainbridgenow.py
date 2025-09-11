@@ -43,7 +43,13 @@ def scrape_events():
     events = scrape_ics(
         "https://thrillshare-cmsv2.services.thrillshare.com/api/v4/o/22349/cms/events/generate_ical?filter_ids&section_ids"
     )
-    filters = ["theater", "play", "concert", "silver bells"]
+    filters = [
+        "theater",
+        "play",
+        "concert",
+        "silver bells",
+        "board of education",
+    ]
     filt_events = []
     for event in events:
         if any_word_in(event.name.lower(), filters):
