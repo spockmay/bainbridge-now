@@ -108,9 +108,7 @@ class Event:
             time_range = f"{start_time_str.split(',')[0]}, {start_time_str.split(',')[1].strip()} @ {start_time_str.split(',')[2].strip()} {end_time_str}"
 
         notes_html = (
-            f"<br><strong>Notes:</strong> {self.notes}</br>"
-            if self.notes
-            else ""
+            f"<br><strong>Notes:</strong> {self.notes}" if self.notes else ""
         )
 
         location_html = f"<br>{self.location}" if self.location else ""
