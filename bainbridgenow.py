@@ -8,6 +8,19 @@ import time
 load_dotenv()  # loads .env file into environment
 
 
+def get_upcoming_friday():
+    today = datetime.now()
+    # Calculate the number of days until the next Friday (Friday is weekday 4)
+    days_until_friday = (4 - today.weekday() + 7) % 7
+    if days_until_friday == 0:
+        # If today is Friday, the next Friday is in 7 days
+        days_until_friday = 0
+
+    upcoming_friday = today + timedelta(days=days_until_friday)
+    # Set the time to midnight (start of the day)
+    return upcoming_friday.replace(hour=0, minute=0, second=0, microsecond=0)
+
+
 def any_word_in(phrase: str, words: List[str]) -> bool:
     for word in words:
         if word in phrase:
@@ -157,8 +170,8 @@ out_html = "<html>"
 
 for event_type in event_types:
     upcoming = get_events_by_date_and_type(
-        datetime.now() + timedelta(days=1),
-        datetime.now() + timedelta(days=8),
+        get_upcoming_friday(),
+        get_upcoming_friday() + timedelta(days=8),
         event_type=event_type,
     )
 
