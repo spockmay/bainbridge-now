@@ -5,6 +5,7 @@ import re
 import requests
 from lxml import html
 from bs4 import BeautifulSoup
+import pytz
 
 from event import Event
 
@@ -281,12 +282,80 @@ def scrape_park_events(pg: int = 1) -> List[Event]:
     return events
 
 
+def scrape_merchat_assoc_events():
+    base_url = "https://www.chagrinfallsmerchantassociation.org"
+
+    url = f"{base_url}/calendar/"
+    resp = requests.get(url)
+    resp.raise_for_status()
+    soup = BeautifulSoup(resp.text, "html.parser")
+
+    events = []
+
+    for ev in soup.select("div.event-block.card.m-b"):
+        # Name + URL
+        title_tag = ev.select_one("a.title.styled-widget-link")
+        name = title_tag.get_text(strip=True) if title_tag else None
+        detail_url = base_url + title_tag["href"] if title_tag else None
+
+        # Date + Time
+        date_str = ev.select_one(".time .date")
+        date_str = (
+            date_str.get_text(strip=True).replace("📅", "")
+            if date_str
+            else None
+        )
+
+        time_str = ev.select_one(".time .start-time")
+        time_str = (
+            time_str.get_text(strip=True).replace("🕒", "")
+            if time_str
+            else None
+        )
+
+        # Location (street + city/state if present)
+        location_tag = ev.select_one(".location")
+        location = None
+        if location_tag:
+            parts = [
+                p.get_text(strip=True)
+                for p in location_tag.find_all(recursive=False)
+            ]
+            location = " ".join(parts)
+
+        # Try to parse datetime
+        start_datetime = None
+        if date_str and time_str:
+            dt_str = f"{date_str} {time_str}"
+            parts = dt_str.rsplit(" ", 1)  # split off last word (timezone)
+            if len(parts) == 2:
+                dt_str = parts[0]
+
+            naive_dt = datetime.strptime(dt_str, "%b %d, %Y %I:%M %p")
+            eastern = pytz.timezone("America/New_York")
+            start_datetime = eastern.localize(naive_dt)
+
+        event = Event(
+            start_datetime=start_datetime,
+            name=name,
+            url=detail_url,
+            event_type="COMMUNITY",
+            zip_code=location,
+            notes="",
+            location=location,
+        )
+        events.append(event)
+
+    return events
+
+
 if __name__ == "__main__":
-    events = scrape_park_events()
-    events.extend(scrape_park_events(pg=2))
-    events.extend(scrape_park_events(pg=3))
+    events = scrape_merchat_assoc_events()
 
     for e in events:
         print(e)
 
     print(len(events))
+
+    for event in events:
+        event.write_to_db()

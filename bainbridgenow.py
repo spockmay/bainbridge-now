@@ -123,6 +123,12 @@ def scrape_events():
     print("  %s events found." % len(events))
     scraped_events.extend(events)
 
+    # Chagrin Falls Merchant Assoc
+    print("Scraping Geauga County Parks")
+    events = scrape_merchat_assoc_events()
+    print("  %s events found." % len(events))
+    scraped_events.extend(events)
+
     print("Writing to database...")
     for event in scraped_events:
         event.write_to_db()
