@@ -124,7 +124,7 @@ def scrape_events():
     scraped_events.extend(events)
 
     # Chagrin Falls Merchant Assoc
-    print("Scraping Geauga County Parks")
+    print("Scraping Chagrin Falls Merchant Assoc")
     events = scrape_merchat_assoc_events()
     print("  %s events found." % len(events))
     scraped_events.extend(events)
@@ -169,7 +169,7 @@ def get_unique_event_types() -> List[str]:
             conn.close()
 
 
-# scrape_events()
+scrape_events()
 
 event_types = get_unique_event_types()
 out_html = "<html>"
@@ -177,7 +177,7 @@ out_html = "<html>"
 for event_type in event_types:
     upcoming = get_events_by_date_and_type(
         get_upcoming_friday(),
-        get_upcoming_friday() + timedelta(days=8),
+        get_upcoming_friday() + timedelta(days=10),
         event_type=event_type,
     )
 
