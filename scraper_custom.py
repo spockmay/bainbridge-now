@@ -354,6 +354,87 @@ def scrape_merchat_assoc_events():
     return events
 
 
+def scrape_beaver_events():
+    # TODO: This isn't super clean as the style isn't particularly consistent between events.
+    # But it is pretty close, enough that I can manually only cleanup a couple entries.
+    # Better/cheaper than trying to have an LLM chunk through it. It will also miss if there
+    # are multiple events on a single day.
+    eastern = pytz.timezone("America/New_York")
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    }
+    url = "https://www.bumminbeaver.com/?page_id=34"
+
+    resp = requests.get(url, headers=headers)
+    resp.raise_for_status()
+    soup = BeautifulSoup(resp.text, "html.parser")
+
+    events = []
+
+    # Each event row has two columns: date + details
+    for row in soup.select(
+        "div.pagelayer-row-holder.pagelayer-row.pagelayer-auto.pagelayer-width-auto"
+    ):
+        cols = row.select("div.pagelayer-col")
+        if len(cols) != 2:
+            continue
+
+        # Date (left col)
+        date_text = cols[0].get_text(strip=True)
+        if not re.match(r"\d{1,2}/\d{1,2}/\d{4}", date_text):
+            continue  # skip non-event rows
+
+        # Details (right col, may have multiple <p>)
+        details = [
+            p.get_text(strip=True)
+            for p in cols[1].select("p")
+            if p.get_text(strip=True)
+        ]
+
+        # Parse date
+        event_date = datetime.strptime(date_text, "%m/%d/%Y").date()
+
+        # Only parse out the first line, ignore the rest :\
+        desc = details[0]
+        start_dt = None
+        end_dt = None
+        m = re.search(
+            r"(\d{1,2}:\d{2}\s*[APMapm]{2})(?:\s*-\s*(\d{1,2}:\d{2}\s*[APMapm]{2}))?",
+            desc,
+        )
+        if m:
+            start_str = m.group(1)
+            start_naive = datetime.strptime(
+                f"{date_text} {start_str}", "%m/%d/%Y %I:%M%p"
+            )
+            start_dt = eastern.localize(start_naive)
+
+            if m.group(2):
+                end_str = m.group(2)
+                end_naive = datetime.strptime(
+                    f"{date_text} {end_str}", "%m/%d/%Y %I:%M%p"
+                )
+                end_dt = eastern.localize(end_naive)
+            desc = desc.replace(m.group(0), "")[:-3]
+        else:
+            start_naive = datetime.strptime(f"{date_text}", "%m/%d/%Y")
+            start_dt = eastern.localize(start_naive)
+
+        event = Event(
+            start_datetime=start_dt,
+            end_datetime=end_dt,
+            name=desc,
+            url=url,
+            event_type="Dining/Entertainment",
+            zip_code="44023",
+            location="Bummin Beaver Brewery",
+        )
+        events.append(event)
+
+    return events
+
+
 if __name__ == "__main__":
     events = scrape_merchat_assoc_events()
 

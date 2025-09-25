@@ -129,6 +129,12 @@ def scrape_events():
     print("  %s events found." % len(events))
     scraped_events.extend(events)
 
+    # Bummin Beaver
+    print("Scraping Bummin Beaver")
+    events = scrape_beaver_events()
+    print("  %s events found." % len(events))
+    scraped_events.extend(events)
+
     print("Writing to database...")
     for event in scraped_events:
         event.write_to_db()
