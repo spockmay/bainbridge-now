@@ -208,7 +208,12 @@ def scrape_park_events(pg: int = 1) -> List[Event]:
         index = 25 * (pg - 1)
         url = f"{base_url}/programs/index.shtml?month=&day=&year=&list_programs=1&or=&dts=&wy=asc&num={index}&sid=885364.17254&uid="
 
-    response = requests.get(url)
+    # Set cookies to bypass zip code check
+    cookies = {
+        "ZP": "zp%3A%3A44023",
+    }
+
+    response = requests.get(url, cookies=cookies)
     response.raise_for_status()  # raises error if request failed
     soup = BeautifulSoup(response.text, "html.parser")
 
