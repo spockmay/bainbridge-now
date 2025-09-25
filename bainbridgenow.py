@@ -135,6 +135,12 @@ def scrape_events():
     print("  %s events found." % len(events))
     scraped_events.extend(events)
 
+    # 8th Day Brew Co
+    print("Scraping 8th Day Brewing Company")
+    events = scrape_8thday_events()
+    print("  %s events found." % len(events))
+    scraped_events.extend(events)
+
     print("Writing to database...")
     for event in scraped_events:
         event.write_to_db()

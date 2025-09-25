@@ -435,6 +435,119 @@ def scrape_beaver_events():
     return events
 
 
+def scrape_8thday_events():
+    eastern = pytz.timezone("America/New_York")
+
+    url = "https://8thdaybrewing.com/chagrin-falls-auburn-township-8th-day-brewing-company-events"
+
+    resp = requests.get(url)
+    resp.raise_for_status()
+    soup = BeautifulSoup(resp.text, "html.parser")
+
+    events = []
+
+    events = []
+    for holder in soup.select("div.events-holder"):
+        # Some pages wrap actual content inside <section> inside the holder
+        section = holder.find("section")
+
+        text_holder = holder.select_one("div.event-text-holder")
+        if not text_holder:
+            # fallback: maybe the holder itself is the text holder
+            text_holder = holder
+
+        # Title (h2)
+        h2 = text_holder.find("h2")
+        title = h2.get_text(strip=True) if h2 else None
+
+        # Day & time text
+        date_tag = text_holder.select_one("p.event-day")
+        date_text = date_tag.get_text(" ", strip=True) if date_tag else None
+
+        time_tag = text_holder.select_one("p.event-time")
+        time_text = time_tag.get_text(" ", strip=True) if time_tag else None
+
+        # Parse date_text and time_text into timezone-aware datetimes (America/New_York)
+        start_dt = end_dt = None
+        if date_text:
+            # remove leading weekday (e.g., "Thursday ") and ordinal suffixes (25th -> 25)
+            d = re.sub(r"^[A-Za-z]+\s+", "", date_text).strip()
+            d = re.sub(r"(\d+)(st|nd|rd|th)", r"\1", d, flags=re.IGNORECASE)
+
+            # assume current year if not present
+            year = datetime.now().year
+            date_obj = None
+            for fmt in ("%B %d %Y", "%b %d %Y"):
+                try:
+                    date_obj = datetime.strptime(f"{d} {year}", fmt).date()
+                    break
+                except ValueError:
+                    continue
+
+            if date_obj and time_text:
+                # match times like "05:00 PM - 09:00 PM" (end may be "?" or missing)
+                m = re.search(
+                    r"(\d{1,2}:\d{2}\s*[AaPp][Mm])\s*[-–]\s*(\d{1,2}:\d{2}\s*[AaPp][Mm]|\?)",
+                    time_text,
+                )
+                if m:
+                    start_s = re.sub(r"\s+", " ", m.group(1).strip()).upper()
+                    end_s = m.group(2).strip()
+                    if end_s != "?":
+                        end_s = re.sub(r"\s+", " ", end_s).upper()
+                    else:
+                        end_s = None
+
+                    # build naive datetimes and attach timezone
+                    try:
+                        start_time = datetime.strptime(
+                            start_s, "%I:%M %p"
+                        ).time()
+                        naive_start = datetime(
+                            year=date_obj.year,
+                            month=date_obj.month,
+                            day=date_obj.day,
+                            hour=start_time.hour,
+                            minute=start_time.minute,
+                        )
+                        start_dt = eastern.localize(naive_start)
+                    except Exception:
+                        start_dt = None
+
+                    if end_s:
+                        try:
+                            end_time = datetime.strptime(
+                                end_s, "%I:%M %p"
+                            ).time()
+                            naive_end = datetime(
+                                year=date_obj.year,
+                                month=date_obj.month,
+                                day=date_obj.day,
+                                hour=end_time.hour,
+                                minute=end_time.minute,
+                            )
+                            # if end is before or equal to start, assume it crosses midnight -> add a day
+                            if start_dt and naive_end <= naive_start:
+                                naive_end = naive_end + datetime.timedelta(
+                                    days=1
+                                )
+                            end_dt = eastern.localize(naive_end)
+                        except Exception:
+                            end_dt = None
+
+        event = Event(
+            start_datetime=start_dt,
+            end_datetime=end_dt,
+            name=title,
+            url=url,
+            event_type="Dining/Entertainment",
+            zip_code="44023",
+            location="8th Day Brewing Co.",
+        )
+        events.append(event)
+    return events
+
+
 if __name__ == "__main__":
     events = scrape_merchat_assoc_events()
 
