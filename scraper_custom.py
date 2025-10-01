@@ -6,6 +6,8 @@ import requests
 from lxml import html
 from bs4 import BeautifulSoup
 import pytz
+import string
+import calendar
 
 from event import Event
 
@@ -548,13 +550,197 @@ def scrape_8thday_events():
     return events
 
 
-if __name__ == "__main__":
-    events = scrape_merchat_assoc_events()
+def fetch_bootstrap_state(url):
+    resp = requests.get(url)
+    resp.raise_for_status()
+    soup = BeautifulSoup(resp.text, "html.parser")
+    script = soup.find("script", string=re.compile("__BOOTSTRAP_STATE__"))
+    if not script:
+        raise RuntimeError("Could not find bootstrap state script")
 
+    match = re.search(
+        r"window\.__BOOTSTRAP_STATE__\s*=\s*(\{.*\});?", script.string, re.S
+    )
+    if not match:
+        raise RuntimeError("Could not extract JSON")
+    return json.loads(match.group(1))
+
+
+def parse_date_range(section_text, year=None):
+    """
+    Parse something like 'SEPTEMBER 17 - 20' into (month, [days]).
+    """
+    if year is None:
+        year = datetime.now().year
+
+    m = re.match(
+        r"([A-Za-z]+)\s+(\d{1,2})(?:\s*-\s*(\d{1,2}))?", section_text.strip()
+    )
+    if not m:
+        return []
+    month_name, start_day, end_day = m.group(1), int(m.group(2)), m.group(3)
+    month = list(calendar.month_name).index(month_name.capitalize())
+    if end_day:
+        end_day = int(end_day)
+        days = list(range(start_day, end_day + 1))
+    else:
+        days = [start_day]
+    return [datetime(year, month, d) for d in days]
+
+
+def parse_time_range(text):
+    """
+    Extracts the first time range like '5:00 - 8:00' and returns (start, end).
+    """
+    m = re.search(
+        r"(\d{1,2}:\d{2})\s*(AM|PM)?\s*-\s*(\d{1,2}:\d{2})\s*(AM|PM)?",
+        text,
+        re.I,
+    )
+    if not m:
+        m = re.search(
+            r"(\d{1,2}:\d{2})\s*(AM|PM)?\s*-",
+            text,
+            re.I,
+        )
+    if not m:
+        return None, None
+
+    groups = m.groups()
+    if len(groups) == 4:
+        start_str, start_ampm, end_str, end_ampm = m.groups()
+    else:
+        start_str = groups[0]
+        start_ampm = None
+        end_str = None
+        end_ampm = None
+    fmt = "%I:%M %p"
+
+    # If AM/PM missing on end, inherit from start
+    if not end_ampm and start_ampm:
+        end_ampm = start_ampm
+
+    start = datetime.strptime(f"{start_str} {start_ampm or 'PM'}", fmt).time()
+
+    try:
+        end = datetime.strptime(f"{end_str} {end_ampm or 'PM'}", fmt).time()
+    except ValueError:
+        end = None
+    return start, end
+
+
+def parse_events(data, url):
+    events = []
+    try:
+        user_content = data["siteData"]["page"]["properties"]["contentAreas"][
+            "userContent"
+        ]["content"]
+        cells = user_content.get("cells", [])
+    except KeyError:
+        return events
+
+    eastern = pytz.timezone("America/New_York")
+
+    for cell in cells:
+        content = cell.get("content", {})
+        props = content.get("properties", {})
+        section_ops = (
+            props.get("sectionTitle", {})
+            .get("title", {})
+            .get("quill", {})
+            .get("ops", [])
+        )
+        section_text = "".join(
+            op.get("insert", "") for op in section_ops
+        ).strip()
+        date_range = parse_date_range(section_text)
+
+        if not date_range:
+            continue
+
+        for rep in props.get("repeatables", []):
+            title_ops = (
+                rep.get("title", {})
+                .get("title", {})
+                .get("quill", {})
+                .get("ops", [])
+            )
+            weekday_text = (
+                "".join(op.get("insert", "") for op in title_ops)
+                .strip()
+                .upper()
+            )
+            text_ops = (
+                rep.get("text", {})
+                .get("content", {})
+                .get("quill", {})
+                .get("ops", [])
+            )
+            details = "".join(op.get("insert", "") for op in text_ops).strip()
+
+            # Match weekday to actual date in section
+            event_date = None
+            for d in date_range:
+                if (
+                    d.strftime("%A").upper().startswith(weekday_text[:3])
+                ):  # match "WED" → Wednesday
+                    event_date = d
+                    break
+            if not event_date:
+                continue
+
+            # Extract time range
+            start_t, end_t = parse_time_range(details)
+            start_dt = (
+                eastern.localize(datetime.combine(event_date, start_t))
+                if start_t
+                else ""
+            )
+            end_dt = (
+                eastern.localize(datetime.combine(event_date, end_t))
+                if end_t
+                else ""
+            )
+
+            # Extract title (bold parts or fallback to whole details)
+            title_match = re.findall(r"([A-Z][A-Z' &]+)", details)
+            title = ""
+            while True:
+                if "FOOD" in title_match[0]:
+                    title += (
+                        title_match[0].strip() + ": " + title_match[1].strip()
+                    )
+                elif "MUSIC" in title_match[0]:
+                    title += (
+                        title_match[0].strip() + ": " + title_match[1].strip()
+                    )
+                title_match.pop(1)
+                title_match.pop(0)
+                if len(title_match) >= 2:
+                    title += " and "
+                else:
+                    break
+
+            event = Event(
+                start_datetime=start_dt,
+                end_datetime=end_dt,
+                name=string.capwords(title),
+                url=url,
+                event_type="Dining/Entertainment",
+                zip_code="44023",
+                location="Crooked Pecker Brewery",
+            )
+            events.append(event)
+    return events
+
+
+def scrape_crooked_pecker():
+    url = "https://www.crookedpeckerbrewing.com/food-and-events"
+    state = fetch_bootstrap_state(url)
+    return parse_events(state, url)
+
+
+if __name__ == "__main__":
+    events = scrape_crooked_pecker()
     for e in events:
         print(e)
-
-    print(len(events))
-
-    for event in events:
-        event.write_to_db()
