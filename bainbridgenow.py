@@ -141,6 +141,12 @@ def scrape_events():
     print("  %s events found." % len(events))
     scraped_events.extend(events)
 
+    # Crooked Pecker Brewery
+    print("Scraping Crooked Pecker Brewery")
+    events = scrape_crooked_pecker()
+    print("  %s events found." % len(events))
+    scraped_events.extend(events)
+
     print("Writing to database...")
     for event in scraped_events:
         event.write_to_db()
