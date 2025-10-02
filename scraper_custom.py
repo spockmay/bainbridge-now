@@ -740,7 +740,67 @@ def scrape_crooked_pecker():
     return parse_events(state, url)
 
 
+def scrape_blind_squirrel():
+    """
+    Blind Squirrel uses wix, which handles calendars in a really annoying way.
+    Basically we make a call to wix with the appropriate arguments and it returns
+    HTML with javascript code that creates the calendar and all of the events.
+    We manually remove the events list from this javascript and then operate on it.
+
+    Slightly annoyingly the call to wix actually seems to return every event in the
+    history of the location. Thankfully we can just handle that when we SELECT from
+    the database.
+    """
+    eastern = pytz.timezone("America/New_York")
+
+    url = "https://wix.shareiiit.com/schedule/pg?compId=TPASection_lf0j4buv&tz=America/New_York&instance=JClXgFDHQ2HxzhJen4Aqz4G-Odj4Xmy614cqL4hPygE.eyJpbnN0YW5jZUlkIjoiYjkwZDQwNTItZGJlMi00NDlhLTkzYTQtNzViMDhjNjc4MzRlIiwiYXBwRGVmSWQiOiIxMmQ4NDkyOS1kOGViLWM0ODEtODJlYy01MWNkNWIzYzdiYmQiLCJzaWduRGF0ZSI6IjIwMjUtMTAtMDFUMjM6MTc6MjkuMzAyWiIsInZlbmRvclByb2R1Y3RJZCI6InByZW1pdW0iLCJkZW1vTW9kZSI6ZmFsc2UsImFpZCI6IjZkZGJlNWUwLWMxNmQtNDVkYy1hOWM4LTQ4Y2E5NGNhNWM1ZCIsInNpdGVPd25lcklkIjoiYzMzODA0NmMtMzY0Yy00ZDc5LTk2Y2YtMzljMDFkZDc5ZGY3IiwiYnMiOiJsTHQ2Um9rbXNjRGY2LUgzVFJiMGV2UXBTWTFwcktJaEcyOExpaDdyUnJvIiwic2NkIjoiMjAxNC0wMy0wOFQwMTo0ODozOC4yODBaIn0"
+
+    resp = requests.get(url)
+    resp.raise_for_status()
+
+    def get_events_json(response):
+        lines = response.text.split("\r\n")
+        events_json = []
+        for line in lines:
+            if line.startswith("events = eval"):
+                line = line.replace("events = eval((", "").replace("));", "")
+                events_json = json.loads(line)
+        return events_json
+
+    events_json = get_events_json(resp)
+
+    def convert_to_event(e):
+        title = "%s: %s" % (e["name"].title(), e["subtitle"].title())
+
+        return Event(
+            start_datetime=datetime(
+                e["date"]["year"],
+                e["date"]["month"],
+                e["date"]["day"],
+                e["fromHour"],
+                e["fromMin"],
+            ),
+            end_datetime=datetime(
+                e["date"]["year"],
+                e["date"]["month"],
+                e["date"]["day"],
+                e["toHour"],
+                e["toMin"],
+            ),
+            name=title,
+            url="https://www.blindsquirrelwinery.com/simpl-e-schedule",
+            event_type="Dining/Entertainment",
+            zip_code="44023",
+            location=e["location"].title(),
+        )
+
+    events = []
+    for event_json in events_json:
+        events.append(convert_to_event(event_json))
+    return events
+
+
 if __name__ == "__main__":
-    events = scrape_crooked_pecker()
+    events = scrape_blind_squirrel()
     for e in events:
         print(e)

@@ -147,6 +147,12 @@ def scrape_events():
     print("  %s events found." % len(events))
     scraped_events.extend(events)
 
+    # Blind Squirrel Winery
+    print("Scraping Blind Squirrel Winery")
+    events = scrape_blind_squirrel()
+    print("  %s events found." % len(events))
+    scraped_events.extend(events)
+
     print("Writing to database...")
     for event in scraped_events:
         event.write_to_db()
