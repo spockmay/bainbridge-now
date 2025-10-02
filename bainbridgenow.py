@@ -139,6 +139,12 @@ def scrape_events():
     print("  %s events found." % len(events))
     scraped_events.extend(events)
 
+    # Lowe's Greenhouse
+    print("Scraping Lowe's Greenhouse")
+    events = scrape_lowes_greenhouse()
+    print("  %s events found." % len(events))
+    scraped_events.extend(events)
+
     # Bummin Beaver
     print("Scraping Bummin Beaver")
     events = scrape_beaver_events()

@@ -10,6 +10,7 @@ import string
 import calendar
 
 from event import Event
+from scraper_generic import scrape_eventbrite
 
 
 def scrape_json(url: str) -> List[Event]:
@@ -805,7 +806,40 @@ def scrape_blind_squirrel():
     return events
 
 
+def scrape_lowes_greenhouse():
+    url = "https://lowesgreenhouse.com/pages/events"
+
+    resp = requests.get(url)
+    resp.raise_for_status()
+    soup = BeautifulSoup(resp.text, "html.parser")
+
+    event_divs = soup.select("div.featured_collections")
+
+    events = []
+    for div in event_divs:
+        a = div.find("a")
+        url = a.get("href", None)
+        title = a.get("title", None)
+
+        event = None
+
+        if url:
+            url = url.split("?")[0]
+            if "eventbrite" in url:
+                event = scrape_eventbrite(url)
+                event.name = title
+                event.event_type = "COMMUNITY"
+                event.zip_code = "44023"
+            else:
+                # TODO - are there any non-eventbrite events?
+                event = []
+        if event:
+            events.append(event)
+    return events
+
+
 if __name__ == "__main__":
-    events = scrape_blind_squirrel()
+    events = scrape_lowes_greenhouse()
     for e in events:
         print(e)
+        print("------------------------------------------")

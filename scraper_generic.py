@@ -5,6 +5,9 @@ from datetime import datetime
 from openai import OpenAI
 import json
 from lxml import html
+import pytz
+from bs4 import BeautifulSoup
+import re
 
 from event import Event
 
@@ -215,12 +218,90 @@ def convert_llm_json_to_events(
     return events
 
 
-if __name__ == "__main__":
-    url = "https://www.geaugamapleleaf.com/community/geauga-happenings-592/"
-    events_json = extract_events_llm(
-        url, "/html/body/div[2]/div[2]/div[2]/div[3]"
-    )
-    events = convert_llm_json_to_events(events_json, url)
+def parse_eventbrite_datetime(s, year=None):
+    """
+    Parse strings like:
+      - "Thursday, October 9 · 4 - 7pm EDT"
+      - "Saturday, October 18 · 10 - 11:30am EDT"
+    into (start_dt, end_dt) timezone-aware datetimes.
+    """
+    eastern = pytz.timezone("America/New_York")
 
+    if year is None:
+        year = datetime.now().year
+
+    # Remove weekday and split date vs time
+    m = re.match(
+        r"^[A-Za-z]+,\s+([A-Za-z]+ \d+)\s*·\s*(.+?)\s+[A-Z]{2,4}$", s.strip()
+    )
+    if not m:
+        raise ValueError(f"Unrecognized format: {s}")
+    date_str, time_str = m.groups()
+
+    # Parse date
+    date = datetime.strptime(f"{date_str} {year}", "%B %d %Y").date()
+
+    # Parse time range
+    time_str = time_str.strip().lower()
+    # Normalize unicode dashes
+    time_str = time_str.replace("–", "-").replace("—", "-")
+
+    # "4 - 7pm" or "10 - 11:30am"
+    m = re.match(
+        r"(\d{1,2}(?::\d{2})?)\s*-\s*(\d{1,2}(?::\d{2})?)(am|pm)", time_str
+    )
+    if not m:
+        raise ValueError(f"Unrecognized time format: {time_str}")
+    start_part, end_part, ampm = m.groups()
+
+    def parse_time(part, ampm_suffix=None):
+        if ":" not in part:
+            fmt = "%I %p"
+            part_fmt = f"{part} {ampm_suffix}"
+        else:
+            fmt = "%I:%M %p"
+            part_fmt = f"{part} {ampm_suffix}"
+        return datetime.strptime(part_fmt, fmt).time()
+
+    # Decide AM/PM
+    start_t = parse_time(start_part, ampm)
+    end_t = parse_time(end_part, ampm)
+
+    start_dt = eastern.localize(datetime.combine(date, start_t))
+    end_dt = eastern.localize(datetime.combine(date, end_t))
+    return start_dt, end_dt
+
+
+def scrape_eventbrite(url: str):
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    }
+    resp = requests.get(url, headers=headers)
+    resp.raise_for_status()
+    soup = BeautifulSoup(resp.text, "html.parser")
+
+    # scrape the start/end time
+    date_time_str = soup.select("div.date-info")[0]
+    start_dt, end_dt = parse_eventbrite_datetime(date_time_str.get_text())
+
+    # scrape the location
+    location_str = soup.select("p.location-info__address-text")[0]
+    location = location_str.get_text()
+
+    return Event(
+        start_datetime=start_dt,
+        end_datetime=end_dt,
+        url=url,
+        location=location,
+        name=None,
+        event_type=None,
+        zip_code=None,
+    )
+
+
+if __name__ == "__main__":
+    url = "https://breezewoodgardens.com/events/month/?ical=1"
+    events = scrape_ics(url)
     for event in events:
         print(event)
