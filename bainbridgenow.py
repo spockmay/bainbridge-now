@@ -62,6 +62,7 @@ def scrape_events():
         "concert",
         "silver bells",
         "board of education",
+        "homecoming",
     ]
     filt_events = []
     for event in events:
@@ -126,6 +127,15 @@ def scrape_events():
     # Chagrin Falls Merchant Assoc
     print("Scraping Chagrin Falls Merchant Assoc")
     events = scrape_merchat_assoc_events()
+    print("  %s events found." % len(events))
+    scraped_events.extend(events)
+
+    # Breezewood Gardens & Gifts
+    print("Scraping Breezewood Gardens & Gifts")
+    events = scrape_ics("https://breezewoodgardens.com/events/month/?ical=1")
+    for event in events:
+        event.event_type = "COMMUNITY"
+        event.zip_code = "44023"
     print("  %s events found." % len(events))
     scraped_events.extend(events)
 
