@@ -771,21 +771,26 @@ def scrape_blind_squirrel():
 
     def convert_to_event(e):
         title = "%s: %s" % (e["name"].title(), e["subtitle"].title())
+        eastern = pytz.timezone("America/New_York")
 
         return Event(
-            start_datetime=datetime(
-                e["date"]["year"],
-                e["date"]["month"],
-                e["date"]["day"],
-                e["fromHour"],
-                e["fromMin"],
+            start_datetime=eastern.localize(
+                datetime(
+                    e["date"]["year"],
+                    e["date"]["month"],
+                    e["date"]["day"],
+                    e["fromHour"],
+                    e["fromMin"],
+                )
             ),
-            end_datetime=datetime(
-                e["date"]["year"],
-                e["date"]["month"],
-                e["date"]["day"],
-                e["toHour"],
-                e["toMin"],
+            end_datetime=eastern.localize(
+                datetime(
+                    e["date"]["year"],
+                    e["date"]["month"],
+                    e["date"]["day"],
+                    e["toHour"],
+                    e["toMin"],
+                )
             ),
             name=title,
             url="https://www.blindsquirrelwinery.com/simpl-e-schedule",
