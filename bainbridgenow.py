@@ -69,6 +69,7 @@ def scrape_events():
         if any_word_in(event.name.lower(), filters):
             event.event_type = "SCHOOL"
             event.zip_code = "44023"
+            event.url = "https://www.kenstonlocal.org/events"
             filt_events.append(event)
     print("  %s events found." % len(filt_events))
     scraped_events.extend(filt_events)
