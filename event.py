@@ -98,7 +98,7 @@ class Event:
                 end_datetime_aware = self.end_datetime.astimezone(nyc_tz)
 
             # 4. Format the end time string
-            end_time_str = " - %s" % (end_datetime_aware.strftime("%I:%M %p"))
+            end_time_str = " - %s" % (end_datetime_aware.strftime("%#I:%M %p"))
         else:
             end_time_str = ""
 
