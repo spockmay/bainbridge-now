@@ -106,7 +106,7 @@ def scrape_events():
     events_json = extract_events_llm(
         scraped_urls[0], "/html/body/div[2]/div[2]/div[2]/div[3]"
     )
-    events = convert_llm_json_to_events(events_json, url)
+    events = convert_llm_json_to_events(events_json, scraped_urls[0])
     print("  %s events found." % len(events))
     scraped_events.extend(events)
 
