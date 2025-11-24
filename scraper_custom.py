@@ -827,9 +827,10 @@ def scrape_lowes_greenhouse():
             url = url.split("?")[0]
             if "eventbrite" in url:
                 event = scrape_eventbrite(url)
-                event.name = title
-                event.event_type = "COMMUNITY"
-                event.zip_code = "44023"
+                if event is not None:
+                    event.name = title
+                    event.event_type = "COMMUNITY"
+                    event.zip_code = "44023"
             else:
                 # TODO - are there any non-eventbrite events?
                 event = []

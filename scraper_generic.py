@@ -281,23 +281,26 @@ def scrape_eventbrite(url: str):
     resp.raise_for_status()
     soup = BeautifulSoup(resp.text, "html.parser")
 
-    # scrape the start/end time
-    date_time_str = soup.select("div.date-info")[0]
-    start_dt, end_dt = parse_eventbrite_datetime(date_time_str.get_text())
+    try:
+        # scrape the start/end time
+        date_time_str = soup.select("div.date-info")[0]
+        start_dt, end_dt = parse_eventbrite_datetime(date_time_str.get_text())
 
-    # scrape the location
-    location_str = soup.select("p.location-info__address-text")[0]
-    location = location_str.get_text()
+        # scrape the location
+        location_str = soup.select("p.location-info__address-text")[0]
+        location = location_str.get_text()
 
-    return Event(
-        start_datetime=start_dt,
-        end_datetime=end_dt,
-        url=url,
-        location=location,
-        name=None,
-        event_type=None,
-        zip_code=None,
-    )
+        return Event(
+            start_datetime=start_dt,
+            end_datetime=end_dt,
+            url=url,
+            location=location,
+            name=None,
+            event_type=None,
+            zip_code=None,
+        )
+    except:
+        return None
 
 
 if __name__ == "__main__":
