@@ -63,6 +63,8 @@ def scrape_events():
         "silver bells",
         "board of education",
         "homecoming",
+        "musical",
+        "pancake",
     ]
     filt_events = []
     for event in events:
