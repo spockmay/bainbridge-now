@@ -385,7 +385,8 @@ def scrape_beaver_events():
 
         # Date (left col)
         date_text = cols[0].get_text(strip=True)
-        if not re.match(r"\d{1,2}/\d{1,2}/\d{4}", date_text):
+        m = re.match(r"[a-zA-Z]*day(\d{1,2}\/\d{1,2}\/\d{4})", date_text)
+        if not m:
             continue  # skip non-event rows
 
         # Details (right col, may have multiple <p>)
@@ -396,6 +397,7 @@ def scrape_beaver_events():
         ]
 
         # Parse date
+        date_text = m.group(1)
         event_date = datetime.strptime(date_text, "%m/%d/%Y").date()
 
         # Only parse out the first line, ignore the rest :\
@@ -434,7 +436,6 @@ def scrape_beaver_events():
             location="Bummin Beaver Brewery",
         )
         events.append(event)
-
     return events
 
 
