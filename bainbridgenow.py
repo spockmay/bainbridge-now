@@ -32,7 +32,7 @@ def scrape_events():
     scraped_events = []
 
     # Bainbridge Township
-    print("Scraing Bainbridge Township Page")
+    print("Scraping Bainbridge Township Page")
     events = scrape_ics("http://bainbridgetwp.com/events/list/?ical=1")
     for event in events:
         event.event_type = "GOVERNMENT"
