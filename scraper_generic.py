@@ -147,7 +147,7 @@ def extract_events_llm(url: str, xpath: str):
     client = OpenAI()
 
     response = client.chat.completions.create(
-        model="gpt-5",
+        model="gpt-5.4-nano",
         messages=[
             {
                 "role": "system",
