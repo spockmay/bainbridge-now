@@ -241,13 +241,16 @@ except IOError as e:
     # Handle potential file writing errors.
     print(f"An error occurred while writing to the file: {e}")
 
-# send the email
-from send_email_attach import Email
+if os.environ.get("EMAIL_OUTPUT", "False").lower() == "true":
+    # send the email
+    from send_email_attach import Email
 
-mail = Email(
-    to=os.environ.get("EMAIL_RECIP"),
-    subject="BBN Upcoming Events",
-    body="Here's the events for the upcoming week",
-    attach="output.html",
-)
-print(mail.send_email())
+    mail = Email(
+        to=os.environ.get("EMAIL_RECIP"),
+        subject="BBN Upcoming Events",
+        body="Here's the events for the upcoming week",
+        attach="output.html",
+    )
+    print(mail.send_email())
+else:
+    print("Not sending email")
