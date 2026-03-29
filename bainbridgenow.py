@@ -6,6 +6,22 @@ from dotenv import load_dotenv
 from event import *
 import time
 
+import logging
+import io
+
+# 1. Set up a string stream to catch the logs
+log_stream = io.StringIO()
+
+# 2. Configure logging to point to both the Stream (variable) and Console
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(message)s",
+    handlers=[
+        logging.StreamHandler(log_stream),  # Goes to our variable
+        logging.StreamHandler(),  # Goes to the terminal
+    ],
+)
+
 load_dotenv()  # loads .env file into environment
 
 
@@ -33,27 +49,27 @@ def scrape_events():
     scraped_events = []
 
     # Bainbridge Township
-    print("Scraping Bainbridge Township Page")
+    logging.info("Scraping Bainbridge Township Page")
     events = scrape_ics("http://bainbridgetwp.com/events/list/?ical=1")
     for event in events:
         event.event_type = "GOVERNMENT"
         event.zip_code = "44023"
-    print("  %s events found." % len(events))
+    logging.info("  %s events found." % len(events))
     scraped_events.extend(events)
 
     # Bainbridge Library
-    print("Scraping Bainbridge Library Page")
+    logging.info("Scraping Bainbridge Library Page")
     events = scrape_ics(
         "https://geaugalibrary.libcal.com/ical_subscribe.php?src=p&cid=9901&cam=5019"
     )
     for event in events:
         event.event_type = "LIBRARY"
         event.zip_code = "44023"
-    print("  %s events found." % len(events))
+    logging.info("  %s events found." % len(events))
     scraped_events.extend(events)
 
     # Kenston Schools
-    print("Scraping Kenston Schools Page")
+    logging.info("Scraping Kenston Schools Page")
     events = scrape_ics(
         "https://thrillshare-cmsv2.services.thrillshare.com/api/v4/o/22349/cms/events/generate_ical?filter_ids&section_ids"
     )
@@ -74,11 +90,11 @@ def scrape_events():
             event.zip_code = "44023"
             event.url = "https://www.kenstonlocal.org/events"
             filt_events.append(event)
-    print("  %s events found." % len(filt_events))
+    logging.info("  %s events found." % len(filt_events))
     scraped_events.extend(filt_events)
 
     # Kenston Sports
-    print("Scraping Kenston Athletics Page")
+    logging.info("Scraping Kenston Athletics Page")
     events = scrape_ics(
         "https://mmboltapi.azurewebsites.net/api/v2/events/downloadcalendar/2482879/0"
     )
@@ -89,19 +105,19 @@ def scrape_events():
             event.zip_code = "44023"
             event.url = "https://www.kenstonathletics.com/"
             filt_events.append(event)
-    print("  %s events found." % len(filt_events))
+    logging.info("  %s events found." % len(filt_events))
     scraped_events.extend(filt_events)
 
     # CVCC - https://www.cvcc.org/events/calendar
-    print("Scraping CVCC Page")
+    logging.info("Scraping CVCC Page")
     timestamp_ms = int(time.time() * 1000)
     url = f"https://www.cvcc.org/events_upcoming?t={timestamp_ms}&rendermode=json&version=3&limit=20"
     events = scrape_json(url)
-    print("  %s events found." % len(events))
+    logging.info("  %s events found." % len(events))
     scraped_events.extend(events)
 
     # Geauga Maple Leaf
-    # print("Scraping Geauga Maple Leaf")
+    # logging.info("Scraping Geauga Maple Leaf")
     # url = (
     #     "https://www.geaugamapleleaf.com/category/community/geauga-happenings/"
     # )
@@ -110,73 +126,73 @@ def scrape_events():
     #     scraped_urls[0], "/html/body/div[2]/div[2]/div[2]/div[3]"
     # )
     # events = convert_llm_json_to_events(events_json, scraped_urls[0])
-    # print("  %s events found." % len(events))
+    # logging.info("  %s events found." % len(events))
     # scraped_events.extend(events)
 
     # Bainbridge Historical Society
-    print("Scraping Bainbridge Historical Society")
+    logging.info("Scraping Bainbridge Historical Society")
     url = "https://bainbridgehistoricalsociety.org/events/"
     events = parse_bainbridge_events(url)
-    print("  %s events found." % len(events))
+    logging.info("  %s events found." % len(events))
     scraped_events.extend(events)
 
     # Geauga County Parks
-    print("Scraping Geauga County Parks")
+    logging.info("Scraping Geauga County Parks")
     events = scrape_park_events()
     events.extend(scrape_park_events(pg=2))
     events.extend(scrape_park_events(pg=3))
-    print("  %s events found." % len(events))
+    logging.info("  %s events found." % len(events))
     scraped_events.extend(events)
 
     # Chagrin Falls Merchant Assoc
-    print("Scraping Chagrin Falls Merchant Assoc")
+    logging.info("Scraping Chagrin Falls Merchant Assoc")
     events = scrape_merchat_assoc_events()
-    print("  %s events found." % len(events))
+    logging.info("  %s events found." % len(events))
     scraped_events.extend(events)
 
     # Breezewood Gardens & Gifts
-    print("Scraping Breezewood Gardens & Gifts")
+    logging.info("Scraping Breezewood Gardens & Gifts")
     events = scrape_ics("https://breezewoodgardens.com/events/month/?ical=1")
     for event in events:
         event.event_type = "COMMUNITY"
         event.zip_code = "44023"
-    print("  %s events found." % len(events))
+    logging.info("  %s events found." % len(events))
     scraped_events.extend(events)
 
     # Lowe's Greenhouse
-    print("Scraping Lowe's Greenhouse")
+    logging.info("Scraping Lowe's Greenhouse")
     events = scrape_lowes_greenhouse()
-    print("  %s events found." % len(events))
+    logging.info("  %s events found." % len(events))
     scraped_events.extend(events)
 
     # Bummin Beaver
-    print("Scraping Bummin Beaver")
+    logging.info("Scraping Bummin Beaver")
     events = scrape_beaver_events()
-    print("  %s events found." % len(events))
+    logging.info("  %s events found." % len(events))
     scraped_events.extend(events)
 
     # 8th Day Brew Co
-    print("Scraping 8th Day Brewing Company")
+    logging.info("Scraping 8th Day Brewing Company")
     events = scrape_8thday_events()
-    print("  %s events found." % len(events))
+    logging.info("  %s events found." % len(events))
     scraped_events.extend(events)
 
     # Crooked Pecker Brewery
-    print("Scraping Crooked Pecker Brewery")
+    logging.info("Scraping Crooked Pecker Brewery")
     events = scrape_crooked_pecker()
-    print("  %s events found." % len(events))
+    logging.info("  %s events found." % len(events))
     scraped_events.extend(events)
 
     # Blind Squirrel Winery
-    print("Scraping Blind Squirrel Winery")
+    logging.info("Scraping Blind Squirrel Winery")
     events = scrape_blind_squirrel()
-    print("  %s events found." % len(events))
+    logging.info("  %s events found." % len(events))
     scraped_events.extend(events)
 
-    print("Writing to database...")
+    logging.info("Writing to database...")
     for event in scraped_events:
         event.write_to_db()
-    print("Done!")
+    logging.info("Done!")
 
 
 def get_unique_event_types() -> List[str]:
@@ -205,7 +221,7 @@ def get_unique_event_types() -> List[str]:
         return unique_event_types
 
     except sqlite3.Error as e:
-        print(f"Database error: {e}")
+        logging.info(f"Database error: {e}")
         return []
     finally:
         # Ensure the database connection is closed, even if an error occurred
@@ -213,7 +229,7 @@ def get_unique_event_types() -> List[str]:
             conn.close()
 
 
-print("\n\nRun starting...%s" % (datetime.now()))
+logging.info("\n\nRun starting...%s" % (datetime.now()))
 scrape_events()
 
 event_types = get_unique_event_types()
@@ -236,10 +252,10 @@ try:
     with open("output.html", "w") as html_file:
         # Write the contents of the out_html string to the file.
         html_file.write(out_html)
-    print(f"Successfully wrote the HTML content to file")
+    logging.info(f"Successfully wrote the HTML content to file")
 except IOError as e:
     # Handle potential file writing errors.
-    print(f"An error occurred while writing to the file: {e}")
+    logging.info(f"An error occurred while writing to the file: {e}")
 
 if os.environ.get("EMAIL_OUTPUT", "False").lower() == "true":
     # send the email
@@ -248,9 +264,9 @@ if os.environ.get("EMAIL_OUTPUT", "False").lower() == "true":
     mail = Email(
         to=os.environ.get("EMAIL_RECIP"),
         subject="BBN Upcoming Events",
-        body="Here's the events for the upcoming week",
+        body=log_stream.getvalue(),
         attach="output.html",
     )
-    print(mail.send_email())
+    logging.info(mail.send_email())
 else:
-    print("Not sending email")
+    logging.info("Not sending email")
