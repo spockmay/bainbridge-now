@@ -1,6 +1,7 @@
 from scraper_generic import *
 from scraper_custom import *
 from datetime import timedelta, datetime
+import os
 from dotenv import load_dotenv
 from event import *
 import time
@@ -100,17 +101,17 @@ def scrape_events():
     scraped_events.extend(events)
 
     # Geauga Maple Leaf
-    print("Scraping Geauga Maple Leaf")
-    url = (
-        "https://www.geaugamapleleaf.com/category/community/geauga-happenings/"
-    )
-    scraped_urls = get_geauga_maple_leaf_current_events_url(url)
-    events_json = extract_events_llm(
-        scraped_urls[0], "/html/body/div[2]/div[2]/div[2]/div[3]"
-    )
-    events = convert_llm_json_to_events(events_json, scraped_urls[0])
-    print("  %s events found." % len(events))
-    scraped_events.extend(events)
+    # print("Scraping Geauga Maple Leaf")
+    # url = (
+    #     "https://www.geaugamapleleaf.com/category/community/geauga-happenings/"
+    # )
+    # scraped_urls = get_geauga_maple_leaf_current_events_url(url)
+    # events_json = extract_events_llm(
+    #     scraped_urls[0], "/html/body/div[2]/div[2]/div[2]/div[3]"
+    # )
+    # events = convert_llm_json_to_events(events_json, scraped_urls[0])
+    # print("  %s events found." % len(events))
+    # scraped_events.extend(events)
 
     # Bainbridge Historical Society
     print("Scraping Bainbridge Historical Society")
@@ -212,6 +213,7 @@ def get_unique_event_types() -> List[str]:
             conn.close()
 
 
+print("\n\nRun starting...%s" % (datetime.now()))
 scrape_events()
 
 event_types = get_unique_event_types()
@@ -238,3 +240,14 @@ try:
 except IOError as e:
     # Handle potential file writing errors.
     print(f"An error occurred while writing to the file: {e}")
+
+# send the email
+from send_email_attach import Email
+
+mail = Email(
+    to=os.environ.get("EMAIL_RECIP"),
+    subject="BBN Upcoming Events",
+    body="Here's the events for the upcoming week",
+    attach="output.html",
+)
+print(mail.send_email())
