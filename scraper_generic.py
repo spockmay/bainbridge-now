@@ -37,6 +37,9 @@ def scrape_ics(source: str) -> List[Event]:
             with open(source, "rb") as f:
                 ics_content = f.read()
 
+        if not ics_content:
+            return []  # no content, so no events
+
         cal = Calendar.from_ical(ics_content)
         for component in cal.walk():
             if component.name == "VEVENT":
