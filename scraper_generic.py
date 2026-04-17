@@ -50,6 +50,8 @@ def scrape_ics(source: str) -> List[Event]:
                     if component.get("dtend")
                     else None
                 )
+                if end_dt == start_dt:
+                    end_dt = None  # fixes a strange case where start time and end time are the same
                 name = str(component.get("summary").strip())
                 url = (
                     str(component.get("url")) if component.get("url") else None
