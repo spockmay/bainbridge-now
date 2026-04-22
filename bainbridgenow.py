@@ -249,14 +249,20 @@ for event_type in event_types:
             out_html += event.html()
 
 out_html += "</html>"
+
+success = False
 try:
     with open("output.html", "w") as html_file:
         # Write the contents of the out_html string to the file.
         html_file.write(out_html)
     logging.info(f"Successfully wrote the HTML content to file")
+    success = True
 except IOError as e:
     # Handle potential file writing errors.
     logging.info(f"An error occurred while writing to the file: {e}")
+    logging.info("Not sending email due to failure!!")
+    exit(6)
+
 
 if os.environ.get("EMAIL_OUTPUT", "False").lower() == "true":
     # send the email
@@ -268,6 +274,14 @@ if os.environ.get("EMAIL_OUTPUT", "False").lower() == "true":
         body=log_stream.getvalue(),
         attach="output.html",
     )
-    logging.info(mail.send_email())
+    success = mail.send_email()
+    logging.info("Email sent %s" % success)
+
 else:
     logging.info("Not sending email")
+
+if success:
+    logging.info("Deleting database...")
+    os.remove("event_db.sql")
+
+logging.info("Done")
