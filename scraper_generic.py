@@ -30,7 +30,12 @@ def scrape_ics(source: str) -> List[Event]:
         if source.startswith("http"):
             if requests is None:
                 return []
-            response = requests.get(source)
+            response = requests.get(
+                source,
+                headers={
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:150.0) Gecko/20100101 Firefox/150.0"
+                },
+            )
             response.raise_for_status()  # Raise an exception for bad status codes
             ics_content = response.content
         else:

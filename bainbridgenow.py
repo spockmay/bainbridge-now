@@ -151,6 +151,15 @@ def scrape_events():
     logging.info("  %s events found." % len(events))
     scraped_events.extend(events)
 
+    # The Hive
+    logging.info("Scraping The Hive")
+    events = scrape_ics("https://thehivechagrin.com/events/month/?ical=1")
+    for event in events:
+        event.event_type = "COMMUNITY"
+        event.zip_code = "44023"
+    logging.info("  %s events found." % len(events))
+    scraped_events.extend(events)
+
     # Breezewood Gardens & Gifts
     logging.info("Scraping Breezewood Gardens & Gifts")
     events = scrape_ics("https://breezewoodgardens.com/events/month/?ical=1")
