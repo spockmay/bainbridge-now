@@ -2,3 +2,4 @@
 .env
 *.sql
 output.html
+test.py

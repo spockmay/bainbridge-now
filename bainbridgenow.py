@@ -35,7 +35,9 @@ def get_upcoming_friday():
 
     upcoming_friday = today + timedelta(days=days_until_friday)
     # Set the time to midnight (start of the day)
-    return upcoming_friday.replace(hour=0, minute=0, second=0, microsecond=0)
+    return upcoming_friday.replace(
+        hour=16, minute=0, second=0, microsecond=0
+    )  # 4PM local time
 
 
 def any_word_in(phrase: str, words: List[str]) -> bool:
