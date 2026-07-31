@@ -263,7 +263,7 @@ out_html += "</html>"
 
 success = False
 try:
-    with open("output.html", "w") as html_file:
+    with open("output.html", "w", encoding="utf-8") as html_file:
         # Write the contents of the out_html string to the file.
         html_file.write(out_html)
     logging.info(f"Successfully wrote the HTML content to file")
