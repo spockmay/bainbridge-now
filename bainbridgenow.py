@@ -126,7 +126,7 @@ def scrape_events():
     )
     scraped_urls = get_geauga_maple_leaf_current_events_url(url)
     events_json = extract_events_llm(
-        scraped_urls[0], "/html/body/div[2]/div[2]/div[2]/div[3]"
+        scraped_urls[0], "/html/body/div/div[2]/div[2]/div[3]"
     )
     events = convert_llm_json_to_events(events_json, scraped_urls[0])
     logging.info("  %s events found." % len(events))
