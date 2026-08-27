@@ -102,7 +102,7 @@ def get_geauga_maple_leaf_current_events_url(url: str) -> List[str]:
         tree = html.fromstring(response.content)
 
         # Use XPath to find all <a> tags within the specified path
-        xpath_query = "/html/body/div[2]/div[2]/div[2]/div[1]/div/h2/a"
+        xpath_query = "/html/body/div/div[2]/div[2]/div[1]/div[1]/h2/a"
         links = tree.xpath(xpath_query)
 
         # Extract the 'href' attribute from each found element
