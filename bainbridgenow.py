@@ -172,10 +172,10 @@ def scrape_events():
     scraped_events.extend(events)
 
     # Lowe's Greenhouse
-    # logging.info("Scraping Lowe's Greenhouse")
-    # events = scrape_lowes_greenhouse()
-    # logging.info("  %s events found." % len(events))
-    # scraped_events.extend(events)
+    logging.info("Scraping Lowe's Greenhouse")
+    events = scrape_lowes_greenhouse()
+    logging.info("  %s events found." % len(events))
+    scraped_events.extend(events)
 
     # Bummin Beaver
     logging.info("Scraping Bummin Beaver")
@@ -185,9 +185,10 @@ def scrape_events():
 
     # 8th Day Brew Co
     logging.info("Scraping 8th Day Brewing Company")
-    events = scrape_8thday_events()
-    logging.info("  %s events found." % len(events))
-    scraped_events.extend(events)
+    logging.info("  No events posted since their migration to Toast.")
+    # events = scrape_8thday_events()
+    # logging.info("  %s events found." % len(events))
+    # scraped_events.extend(events)
 
     # Crooked Pecker Brewery
     # logging.info("Scraping Crooked Pecker Brewery")
