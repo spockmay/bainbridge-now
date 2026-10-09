@@ -241,9 +241,10 @@ def parse_eventbrite_datetime(s, year=None):
         year = datetime.now().year
 
     # Remove weekday and split date vs time
-    m = re.match(
-        r"^[A-Za-z]+,\s+([A-Za-z]+ \d+)\s*·\s*(.+?)\s+[A-Z]{2,4}$", s.strip()
+    pattern = (
+        r"^[A-Za-z]+,\s+([A-Za-z]+ \d+)\s*[•·]\s*(.+?)(?:\s+([A-Z]{2,4}))?$"
     )
+    m = re.match(pattern, s.strip())
     if not m:
         raise ValueError(f"Unrecognized format: {s}")
     date_str, time_str = m.groups()
