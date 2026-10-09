@@ -157,7 +157,7 @@ def extract_events_llm(url: str, xpath: str):
     client = OpenAI()
 
     response = client.chat.completions.create(
-        model="gpt-5.4-nano",
+        model="gpt-6-luna",
         messages=[
             {
                 "role": "system",
@@ -293,7 +293,7 @@ def scrape_eventbrite(url: str):
 
     try:
         # scrape the start/end time
-        date_time_str = soup.select("div.date-info")[0]
+        date_time_str = soup.select("time")[0]
         start_dt, end_dt = parse_eventbrite_datetime(date_time_str.get_text())
 
         # scrape the location
