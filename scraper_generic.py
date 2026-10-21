@@ -288,11 +288,12 @@ def scrape_eventbrite(url: str):
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
     }
-    resp = requests.get(url, headers=headers)
-    resp.raise_for_status()
-    soup = BeautifulSoup(resp.text, "html.parser")
 
     try:
+        resp = requests.get(url, headers=headers)
+        resp.raise_for_status()
+        soup = BeautifulSoup(resp.text, "html.parser")
+
         # scrape the start/end time
         date_time_str = soup.select("time")[0]
         start_dt, end_dt = parse_eventbrite_datetime(date_time_str.get_text())
