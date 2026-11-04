@@ -216,7 +216,13 @@ def scrape_park_events(pg: int = 1) -> List[Event]:
         "ZP": "zp%3A%3A44023",
     }
 
-    response = requests.get(url, cookies=cookies)
+    response = requests.get(
+        url,
+        cookies=cookies,
+        headers={
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:150.0) Gecko/20100101 Firefox/150.0"
+        },
+    )
     response.raise_for_status()  # raises error if request failed
     soup = BeautifulSoup(response.text, "html.parser")
 
