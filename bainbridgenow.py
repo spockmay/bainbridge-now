@@ -141,11 +141,12 @@ def scrape_events():
 
     # Geauga County Parks
     logging.info("Scraping Geauga County Parks")
-    events = scrape_park_events()
-    events.extend(scrape_park_events(pg=2))
-    events.extend(scrape_park_events(pg=3))
-    logging.info("  %s events found." % len(events))
-    scraped_events.extend(events)
+    logging.info("  nope, anti-bot stuff :(")
+    # events = scrape_park_events()
+    # events.extend(scrape_park_events(pg=2))
+    # events.extend(scrape_park_events(pg=3))
+    # logging.info("  %s events found." % len(events))
+    # scraped_events.extend(events)
 
     # Chagrin Falls Merchant Assoc
     logging.info("Scraping Chagrin Falls Merchant Assoc")
